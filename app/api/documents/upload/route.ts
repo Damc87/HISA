@@ -3,10 +3,12 @@ import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getUploadsDir } from "@/lib/paths";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  await ensureAppReady();
   const formData = await request.formData();
   const file = formData.get("file");
   const projectId = Number(formData.get("projectId"));

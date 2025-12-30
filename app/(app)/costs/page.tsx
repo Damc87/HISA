@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useProjectContext } from "@/components/project-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, THead, TR, TH, TBody, TD } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Download, FileUp, Filter, Plus, Upload } from "lucide-react";
+import { NoProjectState } from "@/components/no-project";
 
 const statusOptions = [
   { value: "PLANIRANO", label: "Planirano" },
@@ -30,6 +32,7 @@ const typeOptions = [
 
 export default function CostsPage() {
   const { selectedProjectId } = useProjectContext();
+  const searchParams = useSearchParams();
   const [costs, setCosts] = useState<any[]>([]);
   const [phases, setPhases] = useState<any[]>([]);
   const [contractors, setContractors] = useState<any[]>([]);
@@ -82,6 +85,15 @@ export default function CostsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    const search = searchParams.get("search") || "";
+    setFilters((prev) => ({ ...prev, search }));
+    if (selectedProjectId) {
+      loadCosts({ search });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const loadDependencies = async () => {
     if (!selectedProjectId) return;
     const [phaseRes, contractorRes] = await Promise.all([
@@ -95,11 +107,12 @@ export default function CostsPage() {
     setContractors(contractorJson.contractors || []);
   };
 
-  const loadCosts = async () => {
+  const loadCosts = async (override?: Partial<typeof filters>) => {
     if (!selectedProjectId) return;
     setLoading(true);
+    const appliedFilters = { ...filters, ...(override || {}) };
     const params = new URLSearchParams({ projectId: selectedProjectId.toString() });
-    Object.entries(filters).forEach(([key, value]) => {
+    Object.entries(appliedFilters).forEach(([key, value]) => {
       if (value) params.set(key, value.toString());
     });
     const res = await fetch(`/api/costs?${params.toString()}`);
@@ -197,6 +210,10 @@ export default function CostsPage() {
     setImportFile(null);
     await loadCosts();
   };
+
+  if (!selectedProjectId) {
+    return <NoProjectState />;
+  }
 
   return (
     <div className="space-y-6">
@@ -330,6 +347,13 @@ export default function CostsPage() {
         <CardContent>
           {loading ? (
             <div className="py-6 text-sm text-slate-500">Nalaganje ...</div>
+          ) : costs.length === 0 ? (
+            <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6">
+              <p className="text-sm text-slate-600">Ni še vnesenih stroškov. Začnite z dodajanjem prvega stroška.</p>
+              <Button onClick={openNew} className="gap-2">
+                <Plus className="h-4 w-4" /> Dodaj prvi strošek
+              </Button>
+            </div>
           ) : (
             <Table>
               <THead>

@@ -6,15 +6,15 @@ const http = require("http");
 const isDev = !app.isPackaged;
 let mainWindow;
 let serverStarted = false;
-const userDataPath = app.getPath("userData");
-const dbPath = path.join(userDataPath, "data", "app.db");
-const uploadsDir = path.join(userDataPath, "uploads");
+const resolvedUserData = process.env.USER_DATA_PATH || app.getPath("userData");
+const dbPath = path.join(resolvedUserData, "data", "app.db");
+const uploadsDir = path.join(resolvedUserData, "uploads");
 const serverPort = process.env.PORT || 3000;
 
 function ensurePaths() {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   fs.mkdirSync(uploadsDir, { recursive: true });
-  process.env.USER_DATA_PATH = userDataPath;
+  process.env.USER_DATA_PATH = resolvedUserData;
   process.env.DATABASE_URL = `file:${dbPath}`;
   process.env.UPLOADS_DIR = uploadsDir;
 }

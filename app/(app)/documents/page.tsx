@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileText, Link } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { NoProjectState } from "@/components/no-project";
 
 export default function DocumentsPage() {
   const { selectedProjectId } = useProjectContext();
@@ -45,6 +46,10 @@ export default function DocumentsPage() {
     const json = await res.json();
     setDocuments(json.documents || []);
   };
+
+  if (!selectedProjectId) {
+    return <NoProjectState />;
+  }
 
   return (
     <div className="space-y-4">
@@ -96,47 +101,58 @@ export default function DocumentsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {documents.map((doc) => (
-          <Card key={doc.id}>
-            <CardHeader className="flex flex-row items-center gap-3">
-              <FileText className="h-5 w-5 text-blue-600" />
-              <div>
-                <CardTitle className="text-base">{doc.originalName}</CardTitle>
-                <p className="text-xs text-slate-500">Naloženo: {formatDate(doc.uploadedAt)}</p>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-600">
-              <p>Faza: {doc.phase?.name || "-"}</p>
-              <p>Izvajalec: {doc.contractor?.name || "-"}</p>
-              {doc.costItems?.[0] && (
-                <p className="flex items-center gap-1 text-blue-700">
-                  <Link className="h-4 w-4" />
-                  Povezano s stroškom #{doc.costItems[0].id}
-                </p>
-              )}
-              <div className="flex gap-2">
-                <a
-                  className={buttonVariants({ variant: "outline", className: "w-full text-center" })}
-                  href={`/api/documents/${doc.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Odpri PDF
-                </a>
+      {documents.length === 0 ? (
+        <Card className="border-dashed bg-white/80">
+          <CardHeader>
+            <CardTitle className="text-base">Ni dokumentov</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">
+            Naložite prvi PDF račun neposredno iz pogleda »Stroški« in ga povežite s postavko.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {documents.map((doc) => (
+            <Card key={doc.id}>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <div>
+                  <CardTitle className="text-base">{doc.originalName}</CardTitle>
+                  <p className="text-xs text-slate-500">Naloženo: {formatDate(doc.uploadedAt)}</p>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-slate-600">
+                <p>Faza: {doc.phase?.name || "-"}</p>
+                <p>Izvajalec: {doc.contractor?.name || "-"}</p>
                 {doc.costItems?.[0] && (
-                  <a
-                    className={buttonVariants({ variant: "ghost", className: "w-full text-center" })}
-                    href={`/costs#cost-${doc.costItems[0].id}`}
-                  >
-                    Na strošek
-                  </a>
+                  <p className="flex items-center gap-1 text-blue-700">
+                    <Link className="h-4 w-4" />
+                    Povezano s stroškom #{doc.costItems[0].id}
+                  </p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <div className="flex gap-2">
+                  <a
+                    className={buttonVariants({ variant: "outline", className: "w-full text-center" })}
+                    href={`/api/documents/${doc.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Odpri PDF
+                  </a>
+                  {doc.costItems?.[0] && (
+                    <a
+                      className={buttonVariants({ variant: "ghost", className: "w-full text-center" })}
+                      href={`/costs#cost-${doc.costItems[0].id}`}
+                    >
+                      Na strošek
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

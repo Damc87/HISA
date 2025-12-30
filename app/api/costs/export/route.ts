@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 function toCsvValue(value: any) {
   if (value === null || value === undefined) return "";
@@ -11,6 +12,7 @@ function toCsvValue(value: any) {
 }
 
 export async function GET(request: Request) {
+  await ensureAppReady();
   const { searchParams } = new URL(request.url);
   const projectId = Number(searchParams.get("projectId"));
   if (!projectId) return NextResponse.json({ error: "projectId je obvezen" }, { status: 400 });

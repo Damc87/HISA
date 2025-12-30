@@ -2,8 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
+  await ensureAppReady();
   const document = await prisma.document.findUnique({ where: { id: Number(params.id) } });
   if (!document) return NextResponse.json({ error: "Ni dokumenta" }, { status: 404 });
 

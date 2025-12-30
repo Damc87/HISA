@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { defaultPhases } from "@/lib/constants";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function GET() {
+  await ensureAppReady();
   const projects = await prisma.project.findMany({ orderBy: { id: "asc" } });
   return NextResponse.json({ projects });
 }
 
 export async function POST(request: Request) {
+  await ensureAppReady();
   const body = await request.json();
   const { name, description } = body;
   if (!name) {

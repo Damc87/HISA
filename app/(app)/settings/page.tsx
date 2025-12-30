@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { NoProjectState } from "@/components/no-project";
 
 export default function SettingsPage() {
   const { selectedProjectId, refresh } = useProjectContext();
@@ -55,6 +56,10 @@ export default function SettingsPage() {
     });
     refresh();
   };
+
+  if (!selectedProjectId) {
+    return <NoProjectState />;
+  }
 
   return (
     <div className="space-y-4">

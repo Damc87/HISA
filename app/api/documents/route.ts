@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function GET(request: Request) {
+  await ensureAppReady();
   const { searchParams } = new URL(request.url);
   const projectId = Number(searchParams.get("projectId"));
   const phaseId = Number(searchParams.get("phaseId") || "");

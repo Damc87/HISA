@@ -5,7 +5,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev",
-    "electron": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron": "USER_DATA_PATH=$PWD/.user-data DATABASE_URL=file:$PWD/.user-data/data/app.db UPLOADS_DIR=$PWD/.user-data/uploads concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "build": "next build",
     "electron:build": "npm run build && electron-builder",
     "electron:dist": "npm run electron:build",

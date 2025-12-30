@@ -1,11 +1,11 @@
 export const defaultPhases = [
   {
     name: "Priprava in organizacija",
-    subphases: ["Idejna zasnova", "Dokumentacija in dovoljenja", "Priprava gradbišča"],
+    subphases: ["Idejna zasnova", "Dokumentacija in dovoljenja", "Priprava gradbišča", "Pogodbe in planiranje"],
   },
   {
     name: "Zemeljska dela in komunalna priprava",
-    subphases: ["Izvedba izkopov", "Škarpe in podporni zidovi", "Komunalni priključki"],
+    subphases: ["Izvedba izkopov", "Škarpe in podporni zidovi", "Komunalni priključki", "Geodetske storitve"],
   },
   {
     name: "Temeljenje in spodnji ustroj",
@@ -25,11 +25,11 @@ export const defaultPhases = [
   },
   {
     name: "Instalacije – groba faza",
-    subphases: ["Elektro napeljave", "Vodovod in ogrevanje", "Prezračevanje"],
+    subphases: ["Elektro napeljave", "Vodovod in ogrevanje", "Prezračevanje", "Pametne inštalacije"],
   },
   {
     name: "Notranji ometi estrihi suhomontaža",
-    subphases: ["Ometi", "Estrihi", "Suhomontažni stropovi in stene"],
+    subphases: ["Ometi", "Estrihi", "Suhomontažni stropovi in stene", "Izravnava podlage"],
   },
   {
     name: "Fasada in toplotni ovoj",

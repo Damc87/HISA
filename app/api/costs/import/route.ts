@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { parse } from "csv-parse/sync";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function POST(request: Request) {
+  await ensureAppReady();
   const formData = await request.formData();
   const projectId = Number(formData.get("projectId"));
   const file = formData.get("file");
