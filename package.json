@@ -64,10 +64,17 @@
       ".next/standalone/**/*",
       ".next/static/**/*",
       "public/**/*",
+      "prisma/schema.prisma",
+      "prisma/template.db.base64",
+      "resources/**/*",
       "package.json"
     ],
     "asar": true,
     "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app/.next/standalone"
+      },
       {
         "from": ".next/static",
         "to": "app/.next/static"
@@ -75,6 +82,14 @@
       {
         "from": "public",
         "to": "app/public"
+      },
+      {
+        "from": "prisma/template.db.base64",
+        "to": "app/prisma/template.db.base64"
+      },
+      {
+        "from": "resources",
+        "to": "app/resources"
       }
     ],
     "win": {

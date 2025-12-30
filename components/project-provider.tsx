@@ -12,6 +12,15 @@ export type Project = {
   primaryMetric?: string | null;
 };
 
+export type CreateProjectPayload = {
+  name: string;
+  description?: string;
+  netoM2?: number | null;
+  brutoM2?: number | null;
+  volumenM3?: number | null;
+  primaryMetric?: string | null;
+};
+
 interface ProjectContextValue {
   projects: Project[];
   selectedProjectId?: number;
@@ -19,6 +28,7 @@ interface ProjectContextValue {
   refresh: () => Promise<void>;
   loading: boolean;
   createDemoProject: () => Promise<void>;
+  createProject: (data: CreateProjectPayload) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(undefined);
@@ -28,7 +38,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const pickSelection = (list: Project[], preferredId?: number) => {
+    const stored = localStorage.getItem("selectedProjectId");
+    const storedId = stored ? Number(stored) : undefined;
+    const candidates = [preferredId, storedId, selectedProjectId, list[0]?.id];
+    const match = candidates.find((id) => id && list.some((p) => p.id === id));
+    return match;
+  };
+
+  const load = async (preferredId?: number) => {
     try {
       setLoading(true);
       const res = await fetch("/api/projects");
@@ -38,9 +56,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
       const data = await res.json();
       setProjects(data.projects);
-      if (!selectedProjectId && data.projects.length) {
-        setSelectedProjectId(data.projects[0].id);
-        localStorage.setItem("selectedProjectId", data.projects[0].id.toString());
+      const chosen = pickSelection(data.projects, preferredId);
+      if (chosen) {
+        setSelectedProjectId(chosen);
+        localStorage.setItem("selectedProjectId", chosen.toString());
+      } else {
+        setSelectedProjectId(undefined);
+        localStorage.removeItem("selectedProjectId");
       }
     } finally {
       setLoading(false);
@@ -49,10 +71,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("selectedProjectId");
-    if (saved) {
-      setSelectedProjectId(Number(saved));
-    }
-    load();
+    load(saved ? Number(saved) : undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -67,8 +86,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     refresh: load,
     loading,
     createDemoProject: async () => {
-      await fetch("/api/projects/seed", { method: "POST" });
-      await load();
+      const res = await fetch("/api/projects/seed", { method: "POST" });
+      const json = await res.json().catch(() => null);
+      await load(json?.project?.id);
+    },
+    createProject: async (payload: CreateProjectPayload) => {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error?.error || "Napaka pri ustvarjanju projekta");
+      }
+      const json = await res.json();
+      await load(json.project?.id);
     },
   };
 

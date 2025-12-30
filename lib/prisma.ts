@@ -5,7 +5,10 @@ import { getDatabasePath } from "./paths";
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 const databasePath = getDatabasePath();
-const databaseUrl = process.env.DATABASE_URL ?? pathToFileURL(databasePath).toString();
+const normalized = databasePath.replace(/\\/g, "/");
+const defaultUrl = normalized.startsWith("/") ? `file:${normalized}` : pathToFileURL(databasePath).toString();
+const databaseUrl = process.env.DATABASE_URL ?? defaultUrl;
+process.env.DATABASE_URL = databaseUrl;
 
 export const prisma =
   globalForPrisma.prisma ||
