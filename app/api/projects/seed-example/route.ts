@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { ensureAppReady, seedDemoData } from "@/lib/bootstrap";
-import { prisma } from "@/lib/prisma";
+import { ensureAppReady, seedExampleProject } from "@/lib/bootstrap";
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") {
@@ -8,12 +7,12 @@ export async function POST() {
   }
 
   await ensureAppReady();
+
   try {
-    const project = await seedDemoData();
-    const projects = await prisma.project.findMany({ orderBy: { createdAt: "asc" } });
-    return NextResponse.json({ status: "success", project, projects });
+    const project = await seedExampleProject();
+    return NextResponse.json({ status: "success", project }, { status: 201 });
   } catch (error: any) {
-    const message = error?.message || "Napaka pri sejanju podatkov";
+    const message = error?.message || "Napaka pri pripravi vzorčnega projekta";
     return NextResponse.json({ status: "error", message }, { status: 500 });
   }
 }

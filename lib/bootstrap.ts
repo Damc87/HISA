@@ -327,6 +327,46 @@ const ensureTemplateUpload = async () => {
 
 export const seedDemoData = async () => ensureDemoProject();
 
+export const seedExampleProject = async () => {
+  const sampleName = "Enodružinska hiša – primer";
+  const project =
+    (await prisma.project.findFirst({ where: { name: sampleName } })) ||
+    (await prisma.project.create({
+      data: {
+        name: sampleName,
+        description: "Vzorčni projekt (brez stroškov)",
+        primaryMetric: PrimaryMetric.NETO_M2,
+      },
+    }));
+
+  await Promise.all(
+    defaultPhases.map(async (phase, phaseIndex) => {
+      const existingPhase = await prisma.phase.findFirst({ where: { projectId: project.id, name: phase.name } });
+      const phaseRecord =
+        existingPhase ??
+        (await prisma.phase.create({
+          data: { name: phase.name, orderIndex: phaseIndex, projectId: project.id },
+        }));
+
+      for (const [subIndex, subName] of phase.subphases.entries()) {
+        const existingSubphase = await prisma.subphase.findFirst({
+          where: { phaseId: phaseRecord.id, name: subName },
+        });
+        if (!existingSubphase) {
+          await prisma.subphase.create({
+            data: { name: subName, orderIndex: subIndex, phaseId: phaseRecord.id },
+          });
+        }
+      }
+    })
+  );
+
+  return prisma.project.findUnique({
+    where: { id: project.id },
+    include: { phases: { include: { subphases: true } } },
+  });
+};
+
 export const getHealth = async () => {
   await ensureAppReady();
   const [projects, phases, contractors] = await Promise.all([

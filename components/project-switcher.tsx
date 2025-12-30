@@ -8,6 +8,14 @@ import { Select } from "@/components/ui/select";
 export function ProjectSwitcher() {
   const { projects, selectedProjectId, setSelectedProjectId, loading, createDemoProject } = useProjectContext();
 
+  const handleSeed = async () => {
+    try {
+      await createDemoProject();
+    } catch {
+      // toast handled in provider
+    }
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Select
@@ -28,7 +36,7 @@ export function ProjectSwitcher() {
         variant={projects.length ? "outline" : "default"}
       />
       {!projects.length && (
-        <Button variant="ghost" onClick={createDemoProject} className="underline underline-offset-2">
+        <Button variant="ghost" onClick={handleSeed} className="underline underline-offset-2">
           Napolni z vzorčnimi podatki
         </Button>
       )}
