@@ -17,6 +17,8 @@ interface ProjectContextValue {
   selectedProjectId?: number;
   setSelectedProjectId: (id: number) => void;
   refresh: () => Promise<void>;
+  loading: boolean;
+  createDemoProject: () => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(undefined);
@@ -24,18 +26,24 @@ const ProjectContext = createContext<ProjectContextValue | undefined>(undefined)
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
 
   const load = async () => {
-    const res = await fetch("/api/projects");
-    if (!res.ok) {
-      console.error("Napaka pri nalaganju projektov");
-      return;
-    }
-    const data = await res.json();
-    setProjects(data.projects);
-    if (!selectedProjectId && data.projects.length) {
-      setSelectedProjectId(data.projects[0].id);
-      localStorage.setItem("selectedProjectId", data.projects[0].id.toString());
+    try {
+      setLoading(true);
+      const res = await fetch("/api/projects");
+      if (!res.ok) {
+        console.error("Napaka pri nalaganju projektov");
+        return;
+      }
+      const data = await res.json();
+      setProjects(data.projects);
+      if (!selectedProjectId && data.projects.length) {
+        setSelectedProjectId(data.projects[0].id);
+        localStorage.setItem("selectedProjectId", data.projects[0].id.toString());
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,10 +60,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     projects,
     selectedProjectId,
     setSelectedProjectId: (id: number) => {
+      if (!id) return;
       setSelectedProjectId(id);
       localStorage.setItem("selectedProjectId", id.toString());
     },
     refresh: load,
+    loading,
+    createDemoProject: async () => {
+      await fetch("/api/projects/seed", { method: "POST" });
+      await load();
+    },
   };
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

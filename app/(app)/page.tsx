@@ -21,6 +21,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { NoProjectState } from "@/components/no-project";
 
 const COLORS = ["#2563eb", "#22c55e", "#a855f7", "#f97316", "#e11d48", "#0ea5e9"];
 
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   };
 
   if (!selectedProjectId) {
-    return <div>Ni izbranega projekta.</div>;
+    return <NoProjectState />;
   }
 
   return (
@@ -67,43 +68,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Skupni stroški</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{data ? formatCurrency(data.total) : "–"}</p>
-            <p className="text-sm text-slate-500">Vključeni vsi stroški</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>€/m2</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{data?.perM2 ? formatCurrency(data.perM2) : "–"}</p>
-            <p className="text-sm text-slate-500">Na osnovi neto površine</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>€/m3</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{data?.perM3 ? formatCurrency(data.perM3) : "–"}</p>
-            <p className="text-sm text-slate-500">Na osnovi volumenskih podatkov</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Neplačano po zapadlosti</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{data?.overdue ? data.overdue.length : 0}</p>
-            <p className="text-sm text-slate-500">Stroški s statusom drugačnim od plačano</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          { title: "Skupni stroški", value: data?.total ? formatCurrency(data.total) : "–", sub: "Vključeni vsi stroški" },
+          { title: "Neplačano", value: data?.totals ? formatCurrency(data.totals.unpaid) : "–", sub: "Še odprti zneski" },
+          { title: "Plačano", value: data?.totals ? formatCurrency(data.totals.paid) : "–", sub: "Stroški s statusom plačano" },
+          { title: "Ta mesec", value: data?.totals ? formatCurrency(data.totals.thisMonth) : "–", sub: "Tokovi za aktualni mesec" },
+          { title: "Št. računov", value: data?.totals ? data.totals.invoices : "0", sub: "Vsi vnosi stroškov" },
+        ].map((card) => (
+          <Card key={card.title} className="border-slate-200 shadow-sm">
+            <CardHeader>
+              <CardTitle>{card.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{loading ? "…" : card.value}</p>
+              <p className="text-sm text-slate-500">{card.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

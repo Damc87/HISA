@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  await ensureAppReady();
   const body = await request.json();
   const id = Number(params.id);
   const {
@@ -57,6 +59,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  await ensureAppReady();
   await prisma.costItem.delete({ where: { id: Number(params.id) } });
   return NextResponse.json({ ok: true });
 }

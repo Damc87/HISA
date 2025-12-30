@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Users } from "lucide-react";
+import { NoProjectState } from "@/components/no-project";
 
 export default function ContractorsPage() {
   const { selectedProjectId } = useProjectContext();
@@ -34,6 +35,10 @@ export default function ContractorsPage() {
     setForm({ name: "", contact: "", email: "", phone: "" });
     load();
   };
+
+  if (!selectedProjectId) {
+    return <NoProjectState />;
+  }
 
   return (
     <div className="space-y-4">
@@ -71,23 +76,34 @@ export default function ContractorsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {contractors.map((c) => (
-          <Card key={c.id}>
-            <CardHeader className="flex flex-row items-center gap-3">
-              <Users className="h-5 w-5 text-blue-600" />
-              <div>
-                <CardTitle className="text-base font-semibold">{c.name}</CardTitle>
-                <p className="text-xs text-slate-500">{c.contact || "Brez kontakta"}</p>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-1 text-sm text-slate-600">
-              <p>Email: {c.email || "-"}</p>
-              <p>Telefon: {c.phone || "-"}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {contractors.length === 0 ? (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base">Začnite z dodajanjem prvega izvajalca</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">
+            Vnesite naziv izvajalca in kliknite »Dodaj« za začetek vodenja kontaktov in računov.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {contractors.map((c) => (
+            <Card key={c.id}>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <Users className="h-5 w-5 text-blue-600" />
+                <div>
+                  <CardTitle className="text-base font-semibold">{c.name}</CardTitle>
+                  <p className="text-xs text-slate-500">{c.contact || "Brez kontakta"}</p>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-1 text-sm text-slate-600">
+                <p>Email: {c.email || "-"}</p>
+                <p>Telefon: {c.phone || "-"}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

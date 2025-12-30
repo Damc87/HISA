@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function GET(request: Request) {
+  await ensureAppReady();
   const { searchParams } = new URL(request.url);
   const projectId = Number(searchParams.get("projectId"));
   if (!projectId) return NextResponse.json({ error: "projectId je obvezen" }, { status: 400 });
@@ -14,6 +16,11 @@ export async function GET(request: Request) {
   ]);
 
   const total = costs.reduce((sum, c) => sum + c.cenaZDDV, 0);
+  const paid = costs.filter((c) => c.status === "PLACANO").reduce((sum, c) => sum + c.cenaZDDV, 0);
+  const unpaid = total - paid;
+  const now = new Date();
+  const monthCosts = costs.filter((c) => c.date.getMonth() === now.getMonth() && c.date.getFullYear() === now.getFullYear());
+  const monthTotal = monthCosts.reduce((sum, c) => sum + c.cenaZDDV, 0);
 
   const byPhase = phases.map((phase) => ({
     name: phase.name,
@@ -54,5 +61,11 @@ export async function GET(request: Request) {
     perM2,
     perM3,
     project,
+    totals: {
+      paid,
+      unpaid,
+      thisMonth: monthTotal,
+      invoices: costs.length,
+    },
   });
 }

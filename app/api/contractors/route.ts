@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureAppReady } from "@/lib/bootstrap";
 
 export async function GET(request: Request) {
+  await ensureAppReady();
   const { searchParams } = new URL(request.url);
   const projectId = Number(searchParams.get("projectId"));
   const contractors = await prisma.contractor.findMany({
@@ -12,6 +14,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  await ensureAppReady();
   const body = await request.json();
   const { name, contact, email, phone, projectId } = body;
   if (!name || !projectId) {

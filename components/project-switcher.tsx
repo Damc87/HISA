@@ -9,7 +9,7 @@ import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 
 export function ProjectSwitcher() {
-  const { projects, selectedProjectId, setSelectedProjectId, refresh } = useProjectContext();
+  const { projects, selectedProjectId, setSelectedProjectId, refresh, loading, createDemoProject } = useProjectContext();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -31,10 +31,12 @@ export function ProjectSwitcher() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Select
-        value={selectedProjectId?.toString()}
+        value={selectedProjectId?.toString() || ""}
         onChange={(e) => setSelectedProjectId(Number(e.target.value))}
         className="w-64"
+        disabled={!projects.length || loading}
       >
+        {!projects.length ? <option>Ni projektov</option> : null}
         {projects.map((project) => (
           <option key={project.id} value={project.id}>
             {project.name}
@@ -44,6 +46,11 @@ export function ProjectSwitcher() {
       <Button variant="outline" onClick={() => setOpen(true)}>
         Nov projekt
       </Button>
+      {!projects.length && (
+        <Button variant="ghost" onClick={createDemoProject}>
+          Ustvari primer projekta
+        </Button>
+      )}
 
       <Dialog
         open={open}
