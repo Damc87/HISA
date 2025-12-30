@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { getUploadsDir } from "@/lib/paths";
 
 export const runtime = "nodejs";
 
@@ -19,8 +20,7 @@ export async function POST(request: Request) {
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  const uploadDir = path.join(process.cwd(), "uploads");
-  await fs.mkdir(uploadDir, { recursive: true });
+  const uploadDir = getUploadsDir();
   const safeName = file.name.replace(/\s+/g, "-");
   const filename = `${Date.now()}-${safeName}`;
   const filepath = path.join(uploadDir, filename);

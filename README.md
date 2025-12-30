@@ -35,6 +35,14 @@ Sodobna Next.js aplikacija za spremljanje stroškov gradnje enodružinske hiše 
 
 Aplikacija bo dosegljiva na `http://localhost:3000`.
 
+### Namizni način (Electron)
+- Zagon v razvoju (Next + Electron okno): `npm run electron`
+- Produkcijski installer (.exe): `npm run electron:build` (ustvari `dist/Gradnja - stroški Setup*.exe`)
+- V namizni aplikaciji se SQLite baza in naloženi PDF shranjujejo v uporabniško mapo:
+  - Baza: `%APPDATA%/gradnja-stroski/data/app.db` (Windows) oz. `app.getPath("userData")/data/app.db`
+  - Uploads: `%APPDATA%/gradnja-stroski/uploads`
+  - Do datotek se dostopa tudi v paketirani aplikaciji (.exe)
+
 ## Struktura podatkov
 Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`, `Document`.
 - `CostItem` vsebuje polja za datume, faze, izvajalca, količine, cene brez/z DDV, tip (material/delo/stroj/prevoz/ostalo), status (planirano/potrjeno/plačano), plačilne podatke in povezavo na dokument.

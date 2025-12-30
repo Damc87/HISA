@@ -7,7 +7,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const document = await prisma.document.findUnique({ where: { id: Number(params.id) } });
   if (!document) return NextResponse.json({ error: "Ni dokumenta" }, { status: 404 });
 
-  const filePath = document.path.startsWith("/")
+  const filePath = path.isAbsolute(document.path)
     ? document.path
     : path.join(process.cwd(), document.path);
   try {
