@@ -3,6 +3,7 @@ import path from "path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureAppReady } from "@/lib/bootstrap";
+import { getUploadsDir } from "@/lib/paths";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   await ensureAppReady();
@@ -11,7 +12,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
   const filePath = path.isAbsolute(document.path)
     ? document.path
-    : path.join(process.cwd(), document.path);
+    : path.join(getUploadsDir(), document.path);
   try {
     const file = await fs.readFile(filePath);
     return new NextResponse(file, {

@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
+import { pathToFileURL } from "url";
 import { CostStatus, CostType, PrimaryMetric } from "@prisma/client";
 import { prisma } from "./prisma";
 import { defaultPhases } from "./constants";
@@ -40,7 +41,7 @@ const ensureDatabase = async () => {
 const runPrismaPush = async (dbPath: string) => {
   const env = {
     ...process.env,
-    DATABASE_URL: process.env.DATABASE_URL ?? `file:${dbPath}`,
+    DATABASE_URL: process.env.DATABASE_URL ?? pathToFileURL(dbPath).toString(),
     PRISMA_CLIENT_ENGINE_TYPE: "binary",
   };
 

@@ -6,17 +6,32 @@ const http = require("http");
 const isDev = !app.isPackaged;
 let mainWindow;
 let serverStarted = false;
-const resolvedUserData = process.env.USER_DATA_PATH || app.getPath("userData");
-const dbPath = path.join(resolvedUserData, "data", "app.db");
-const uploadsDir = path.join(resolvedUserData, "uploads");
 const serverPort = process.env.PORT || 3000;
+const appDirName = "gradnja-stroski";
 
 function ensurePaths() {
+  const defaultUserData = path.join(app.getPath("appData"), appDirName);
+  app.setPath("userData", defaultUserData);
+
+  const userDataPath = process.env.USER_DATA_PATH || defaultUserData;
+  const dbPath = path.join(userDataPath, "data", "app.db");
+  const uploadsDir = path.join(userDataPath, "uploads");
+
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   fs.mkdirSync(uploadsDir, { recursive: true });
-  process.env.USER_DATA_PATH = resolvedUserData;
-  process.env.DATABASE_URL = `file:${dbPath}`;
+
+  const dbUrl = `file:${dbPath.replace(/\\\\/g, "/").replace(/\\/g, "/")}`;
+
+  process.env.USER_DATA_PATH = userDataPath;
+  process.env.DATABASE_URL = dbUrl;
   process.env.UPLOADS_DIR = uploadsDir;
+
+  if (isDev) {
+    // Log only in development to help diagnose path resolution on Windows/macOS/Linux
+    console.log("[electron] userData:", userDataPath);
+    console.log("[electron] database URL:", dbUrl);
+    console.log("[electron] uploads directory:", uploadsDir);
+  }
 }
 
 async function startProductionServer() {

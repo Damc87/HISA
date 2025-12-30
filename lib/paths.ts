@@ -2,12 +2,27 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
+const appDirName = "gradnja-stroski";
+
+const getDefaultUserDataPath = () => {
+  switch (process.platform) {
+    case "win32": {
+      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+      return path.join(appData, appDirName);
+    }
+    case "darwin":
+      return path.join(os.homedir(), "Library", "Application Support", appDirName);
+    default:
+      return path.join(os.homedir(), ".config", appDirName);
+  }
+};
+
 export const getUserDataPath = () => {
-  if (process.env.USER_DATA_PATH) return process.env.USER_DATA_PATH;
-  const fallback = path.join(os.homedir(), ".gradnja-stroski");
-  fs.mkdirSync(fallback, { recursive: true });
-  process.env.USER_DATA_PATH = fallback;
-  return fallback;
+  const fallback = getDefaultUserDataPath();
+  const target = process.env.USER_DATA_PATH || fallback;
+  fs.mkdirSync(target, { recursive: true });
+  process.env.USER_DATA_PATH = target;
+  return target;
 };
 
 export const getDatabasePath = () => {
