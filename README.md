@@ -9,43 +9,31 @@ Sodobna Next.js aplikacija za spremljanje stroškov gradnje enodružinske hiše 
 - recharts za vizualizacije
 - lucide-react ikone
 
-## Namestitev in zagon
-1. Namestite odvisnosti:
+## Hitri začetek
+
+### Windows (namizna aplikacija)
+1. Prenesi installer iz `dist/Gradnja - stroški Setup*.exe`.
+2. Zaženi namestitev in aplikacijo. Ob prvem zagonu sama pripravi bazo `app.db` (vključuje vzorčni projekt) ter mapo `uploads`, zato ni treba imeti nameščenega Node.js ali ročno poganjati Prisma ukazov.
+
+### Razvoj (dev)
+1. Namesti odvisnosti:
    ```bash
    npm install
    ```
-2. Zaženite migracije in generiranje klienta:
+2. Zaženi kombinacijo Next + Electron okna:
    ```bash
-   npx prisma migrate dev --name init
-   npx prisma generate
+   npm run electron
    ```
-3. Napolnite bazo z osnovnimi podatki:
-   ```bash
-   npx prisma db seed
-   ```
-4. Zaženite razvojni strežnik:
-   ```bash
-   npm run dev
-   ```
-
-Aplikacija bo dosegljiva na `http://localhost:3000`.
+   Aplikacija bo samodejno ustvarila lokalno SQLite bazo iz `prisma/template.db` in kopirala vzorčni PDF v mapo `uploads`.
 
 ### Namizni način (Electron)
 - Zagon v razvoju (Next + Electron okno): `npm run electron`
-- Produkcijski installer (.exe): `npm run electron:build` (ustvari `dist/Gradnja - stroški Setup*.exe`)
+- Produkcijski installer (.exe): `npm run electron:build` (ustvari `dist/Gradnja - stroški Setup*.exe`).
 - V namizni aplikaciji se SQLite baza in naloženi PDF shranjujejo v uporabniško mapo (brez ročnih nastavitev ali spremenljivk okolja):
   - Baza: `appData/gradnja-stroski/data/app.db` (npr. `%APPDATA%\\gradnja-stroski\\data\\app.db` na Windows)
   - Uploads: `appData/gradnja-stroski/uploads`
+  - Template baza `prisma/template.db` in vzorčni PDF `resources/primer-racun.pdf` se ob prvem zagonu samodejno prekopirata v uporabniški imenik.
   - Do datotek se dostopa tudi v paketirani aplikaciji (.exe)
-
-### Windows
-- Zahteve: Node.js in npm.
-- Ukazi:
-  ```powershell
-  npm install
-  npm run electron
-  ```
-- Ni treba ustvarjati map ali nastavljati spremenljivk okolja – aplikacija sama izračuna in pripravi poti za bazo ter `uploads`. Ob zagonu v konzolo izpiše uporabljene poti (v razvojni različici) za lažje razhroščevanje.
 
 ## Struktura podatkov
 Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`, `Document`.
@@ -76,6 +64,7 @@ Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`
 
 ## Seed podatki
 `prisma/seed.ts` pripravi vzorčni projekt **“Enodružinska hiša – primer”**, osnovne faze, nekaj izvajalcev in stroškov z računom, da so grafi takoj vidni. Vključen je tudi prazen projekt za ročni vnos.
+- Baza `prisma/template.db` že vsebuje osnovne podatke in se samodejno kopira v uporabniški imenik, zato ročno poganjanje Prisma ukazov ni potrebno za prvi zagon.
 
 ## Razvoj
 - Konfiguracija Tailwind je v `tailwind.config.ts`, globalni slog v `app/globals.css`.
@@ -88,3 +77,4 @@ Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`
 ## Opombe
 - Datoteke v mapi `uploads` niso verzionirane (razen `.gitkeep`).
 - Za produkcijo nastavite varno lokacijo za `DATABASE_URL` in poskrbite za varnost nalaganja datotek.
+- Health check: `/api/health` vrne status strežnika in števce entitet; v razvojni različici vrne tudi poti do baze ter `uploads` mapo.

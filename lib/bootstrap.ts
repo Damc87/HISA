@@ -1,13 +1,13 @@
-import { execSync } from "child_process";
 import path from "path";
 import fs from "fs";
-import { pathToFileURL } from "url";
 import { CostStatus, CostType, PrimaryMetric } from "@prisma/client";
 import { prisma } from "./prisma";
 import { defaultPhases } from "./constants";
-import { getDatabasePath, getUploadsDir } from "./paths";
+import { getDatabasePath, getUploadsDir, getUserDataPath } from "./paths";
 
 let initPromise: Promise<void> | null = null;
+const templateDbName = "template.db";
+const templatePdfName = "primer-racun.pdf";
 
 export const ensureAppReady = async () => {
   if (!initPromise) {
@@ -19,6 +19,77 @@ export const ensureAppReady = async () => {
 const initialize = async () => {
   await ensureDatabase();
   await seedIfEmpty();
+  await ensureTemplateUpload();
+};
+
+const normalizeDbUrl = (dbPath: string) => {
+  const normalized = dbPath.replace(/\\/g, "/");
+  return normalized.startsWith("/") ? `file:${normalized}` : `file:///${normalized}`;
+};
+
+const resolvePathFromCandidates = (candidates: Array<string | undefined>) => {
+  for (const candidate of candidates) {
+    if (candidate && fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+};
+
+const materializeBase64File = (base64Path: string, targetPath: string) => {
+  const raw = fs.readFileSync(base64Path, "utf8");
+  const buffer = Buffer.from(raw, "base64");
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, buffer);
+  return targetPath;
+};
+
+const resolveTemplateDbPath = () => {
+  const appRoot = process.cwd();
+  const resourcesPath = (process as any).resourcesPath as string | undefined;
+  const pairs = [
+    { bin: process.env.TEMPLATE_DB_PATH, base64: process.env.TEMPLATE_DB_PATH ? `${process.env.TEMPLATE_DB_PATH}.base64` : undefined },
+    { bin: path.join(appRoot, "prisma", templateDbName), base64: path.join(appRoot, "prisma", `${templateDbName}.base64`) },
+    { bin: path.join(appRoot, "resources", templateDbName), base64: path.join(appRoot, "resources", `${templateDbName}.base64`) },
+    { bin: path.join(appRoot, "..", "prisma", templateDbName), base64: path.join(appRoot, "..", "prisma", `${templateDbName}.base64`) },
+    { bin: path.join(appRoot, "..", "resources", templateDbName), base64: path.join(appRoot, "..", "resources", `${templateDbName}.base64`) },
+    resourcesPath
+      ? { bin: path.join(resourcesPath, "app", "prisma", templateDbName), base64: path.join(resourcesPath, "app", "prisma", `${templateDbName}.base64`) }
+      : null,
+    resourcesPath
+      ? { bin: path.join(resourcesPath, templateDbName), base64: path.join(resourcesPath, `${templateDbName}.base64`) }
+      : null,
+  ].filter(Boolean) as Array<{ bin?: string; base64?: string }>;
+
+  for (const { bin, base64 } of pairs) {
+    if (bin && fs.existsSync(bin)) return bin;
+    if (base64 && fs.existsSync(base64)) {
+      const target = bin ?? base64.replace(/\.base64$/, "");
+      return materializeBase64File(base64, target);
+    }
+  }
+  throw new Error("Template database ni najdena (manjka prisma/template.db.base64)");
+};
+
+const resolveTemplatePdfPath = () => {
+  const appRoot = process.cwd();
+  const resourcesPath = (process as any).resourcesPath as string | undefined;
+  const pairs = [
+    { bin: process.env.TEMPLATE_PDF_PATH, base64: process.env.TEMPLATE_PDF_PATH ? `${process.env.TEMPLATE_PDF_PATH}.base64` : undefined },
+    { bin: path.join(appRoot, "resources", templatePdfName), base64: path.join(appRoot, "resources", `${templatePdfName}.base64`) },
+    { bin: path.join(appRoot, "..", "resources", templatePdfName), base64: path.join(appRoot, "..", "resources", `${templatePdfName}.base64`) },
+    resourcesPath
+      ? { bin: path.join(resourcesPath, "app", "resources", templatePdfName), base64: path.join(resourcesPath, "app", "resources", `${templatePdfName}.base64`) }
+      : null,
+    resourcesPath ? { bin: path.join(resourcesPath, templatePdfName), base64: path.join(resourcesPath, `${templatePdfName}.base64`) } : null,
+  ].filter(Boolean) as Array<{ bin?: string; base64?: string }>;
+
+  for (const { bin, base64 } of pairs) {
+    if (bin && fs.existsSync(bin)) return bin;
+    if (base64 && fs.existsSync(base64)) {
+      const target = bin ?? base64.replace(/\.base64$/, "");
+      return materializeBase64File(base64, target);
+    }
+  }
+  return null;
 };
 
 const ensureDatabase = async () => {
@@ -27,119 +98,30 @@ const ensureDatabase = async () => {
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
   }
+  process.env.USER_DATA_PATH = getUserDataPath();
+  process.env.DATABASE_URL = normalizeDbUrl(dbPath);
+  process.env.UPLOADS_DIR = getUploadsDir();
 
+  const templatePath = resolveTemplateDbPath();
+  if (!fs.existsSync(dbPath)) {
+    fs.copyFileSync(templatePath, dbPath);
+    return;
+  }
+
+  const hasTable = await hasProjectTable();
+  if (!hasTable) {
+    await prisma.$disconnect();
+    fs.copyFileSync(templatePath, dbPath);
+    await prisma.$connect();
+  }
+};
+
+const hasProjectTable = async () => {
   try {
     const tables = await prisma.$queryRaw<Array<{ name: string }>>`SELECT name FROM sqlite_master WHERE type='table' AND name='Project'`;
-    if (!tables.length) {
-      await runPrismaPush(dbPath);
-    }
+    return tables.length > 0;
   } catch (error) {
-    await runPrismaPush(dbPath);
-  }
-};
-
-const runPrismaPush = async (dbPath: string) => {
-  const env = {
-    ...process.env,
-    DATABASE_URL: process.env.DATABASE_URL ?? pathToFileURL(dbPath).toString(),
-    PRISMA_CLIENT_ENGINE_TYPE: "binary",
-  };
-
-  try {
-    execSync("npx prisma db push --skip-generate", {
-      stdio: "inherit",
-      env,
-    });
-  } catch (error) {
-    await manualSchemaInit();
-  }
-};
-
-const manualSchemaInit = async () => {
-  const statements = [
-    `CREATE TABLE IF NOT EXISTS "Project" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "name" TEXT NOT NULL,
-      "description" TEXT,
-      "netoM2" REAL,
-      "brutoM2" REAL,
-      "volumenM3" REAL,
-      "primaryMetric" TEXT,
-      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );`,
-    `CREATE TABLE IF NOT EXISTS "Contractor" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "name" TEXT NOT NULL,
-      "contact" TEXT,
-      "email" TEXT,
-      "phone" TEXT,
-      "projectId" INTEGER NOT NULL,
-      FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-    );`,
-    `CREATE TABLE IF NOT EXISTS "Phase" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "name" TEXT NOT NULL,
-      "orderIndex" INTEGER NOT NULL DEFAULT 0,
-      "projectId" INTEGER NOT NULL,
-      FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-    );`,
-    `CREATE TABLE IF NOT EXISTS "Subphase" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "name" TEXT NOT NULL,
-      "orderIndex" INTEGER NOT NULL DEFAULT 0,
-      "phaseId" INTEGER NOT NULL,
-      FOREIGN KEY ("phaseId") REFERENCES "Phase" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-    );`,
-    `CREATE TABLE IF NOT EXISTS "Document" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "filename" TEXT NOT NULL,
-      "originalName" TEXT NOT NULL,
-      "mimeType" TEXT NOT NULL,
-      "size" INTEGER NOT NULL,
-      "path" TEXT NOT NULL,
-      "uploadedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "projectId" INTEGER NOT NULL,
-      "contractorId" INTEGER,
-      "phaseId" INTEGER,
-      FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-      FOREIGN KEY ("contractorId") REFERENCES "Contractor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-      FOREIGN KEY ("phaseId") REFERENCES "Phase" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-    );`,
-    `CREATE TABLE IF NOT EXISTS "CostItem" (
-      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-      "date" DATETIME NOT NULL,
-      "projectId" INTEGER NOT NULL,
-      "phaseId" INTEGER,
-      "subphaseId" INTEGER,
-      "contractorId" INTEGER,
-      "opis" TEXT NOT NULL,
-      "kolicina" REAL NOT NULL,
-      "enota" TEXT NOT NULL,
-      "cenaBrezDDV" REAL NOT NULL,
-      "ddvStopnja" REAL NOT NULL,
-      "cenaZDDV" REAL NOT NULL,
-      "tip" TEXT NOT NULL,
-      "status" TEXT NOT NULL,
-      "nacinPlacila" TEXT,
-      "stevilkaRacuna" TEXT,
-      "datumRacuna" DATETIME,
-      "datumZapadlosti" DATETIME,
-      "opombe" TEXT,
-      "documentId" INTEGER,
-      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-      FOREIGN KEY ("phaseId") REFERENCES "Phase" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-      FOREIGN KEY ("subphaseId") REFERENCES "Subphase" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-      FOREIGN KEY ("contractorId") REFERENCES "Contractor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-      FOREIGN KEY ("documentId") REFERENCES "Document" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-    );`,
-  ];
-
-  for (const sql of statements) {
-    // eslint-disable-next-line no-await-in-loop
-    await prisma.$executeRawUnsafe(sql);
+    return false;
   }
 };
 
@@ -332,6 +314,17 @@ const ensureDemoProject = async () => {
   return demoProject;
 };
 
+const ensureTemplateUpload = async () => {
+  const uploadsDir = getUploadsDir();
+  const templatePdf = resolveTemplatePdfPath();
+  if (!templatePdf) return;
+
+  const target = path.join(uploadsDir, templatePdfName);
+  if (!fs.existsSync(target)) {
+    fs.copyFileSync(templatePdf, target);
+  }
+};
+
 export const seedDemoData = async () => ensureDemoProject();
 
 export const getHealth = async () => {
@@ -342,9 +335,22 @@ export const getHealth = async () => {
     prisma.contractor.count(),
   ]);
 
-  return {
+  const dbPath = getDatabasePath();
+  const uploadsDir = getUploadsDir();
+
+  const response: any = {
     server: "ok",
     db: "ok",
     counts: { projects, phases, contractors },
   };
+
+  if (process.env.NODE_ENV !== "production") {
+    response.paths = {
+      databaseUrl: process.env.DATABASE_URL,
+      dbPath,
+      uploadsDir,
+    };
+  }
+
+  return response;
 };

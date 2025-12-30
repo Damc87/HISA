@@ -2,9 +2,15 @@ import { useProjectContext } from "@/components/project-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layers, Plus } from "lucide-react";
+import { ProjectWizard } from "@/components/project-wizard";
 
 export function NoProjectState() {
-  const { createDemoProject } = useProjectContext();
+  const { createDemoProject, projects, setSelectedProjectId } = useProjectContext();
+  const selectFirst = () => {
+    if (projects[0]) {
+      setSelectedProjectId(projects[0].id);
+    }
+  };
 
   return (
     <Card className="border-dashed border-slate-200 bg-white/70">
@@ -14,15 +20,21 @@ export function NoProjectState() {
         </div>
         <div>
           <CardTitle className="text-base">Noben projekt še ni izbran</CardTitle>
-          <p className="text-sm text-slate-600">Začni z dodajanjem novega projekta ali uporabi pripravljeni primer.</p>
+          <p className="text-sm text-slate-600">Začni z ustvarjanjem prvega projekta ali izberi obstoječega.</p>
         </div>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-3">
-        <Button onClick={createDemoProject} className="gap-2">
+        <ProjectWizard triggerLabel="Ustvari prvi projekt" />
+        <Button onClick={createDemoProject} className="gap-2" variant="outline">
           <Plus className="h-4 w-4" />
-          Ustvari primer projekta
+          Napolni s primerom
         </Button>
-        <p className="text-sm text-slate-500">ali klikni »Nov projekt« zgoraj desno.</p>
+        {projects.length > 0 && (
+          <Button variant="ghost" onClick={selectFirst}>
+            Izberi obstoječi projekt
+          </Button>
+        )}
+        <p className="text-sm text-slate-500">Kadarkoli lahko dodaš še več projektov v zgornjem izbirniku.</p>
       </CardContent>
     </Card>
   );
