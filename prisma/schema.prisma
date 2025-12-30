@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum CostType {
+  MATERIAL
+  DELO
+  STROJ
+  PREVOZ
+  OSTALO
+}
+
+enum CostStatus {
+  PLANIRANO
+  POTRJENO
+  PLACANO
+}
+
+enum PrimaryMetric {
+  NETO_M2
+  BRUTO_M2
+  VOLUMEN_M3
+}
+
+model Project {
+  id            Int          @id @default(autoincrement())
+  name          String
+  description   String?
+  netoM2        Float?
+  brutoM2       Float?
+  volumenM3     Float?
+  primaryMetric PrimaryMetric?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  phases        Phase[]
+  contractors   Contractor[]
+  costs         CostItem[]
+  documents     Document[]
+}
+
+model Contractor {
+  id         Int        @id @default(autoincrement())
+  name       String
+  contact    String?
+  email      String?
+  phone      String?
+  project    Project    @relation(fields: [projectId], references: [id])
+  projectId  Int
+  costs      CostItem[]
+  documents  Document[]
+}
+
+model Phase {
+  id         Int        @id @default(autoincrement())
+  name       String
+  orderIndex Int        @default(0)
+  project    Project    @relation(fields: [projectId], references: [id])
+  projectId  Int
+  subphases  Subphase[]
+  costs      CostItem[]
+}
+
+model Subphase {
+  id        Int      @id @default(autoincrement())
+  name      String
+  orderIndex Int     @default(0)
+  phase     Phase    @relation(fields: [phaseId], references: [id])
+  phaseId   Int
+  costs     CostItem[]
+}
+
+model CostItem {
+  id             Int         @id @default(autoincrement())
+  date           DateTime
+  project        Project     @relation(fields: [projectId], references: [id])
+  projectId      Int
+  phase          Phase?      @relation(fields: [phaseId], references: [id])
+  phaseId        Int?
+  subphase       Subphase?   @relation(fields: [subphaseId], references: [id])
+  subphaseId     Int?
+  contractor     Contractor? @relation(fields: [contractorId], references: [id])
+  contractorId   Int?
+  opis           String
+  kolicina       Float
+  enota          String
+  cenaBrezDDV    Float
+  ddvStopnja     Float
+  cenaZDDV       Float
+  tip            CostType
+  status         CostStatus
+  nacinPlacila   String?
+  stevilkaRacuna String?
+  datumRacuna    DateTime?
+  datumZapadlosti DateTime?
+  opombe         String?
+  document       Document?    @relation("CostDocument", fields: [documentId], references: [id])
+  documentId     Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Document {
+  id           Int         @id @default(autoincrement())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  uploadedAt   DateTime    @default(now())
+  project      Project     @relation(fields: [projectId], references: [id])
+  projectId    Int
+  contractor   Contractor? @relation(fields: [contractorId], references: [id])
+  contractorId Int?
+  phase        Phase?      @relation(fields: [phaseId], references: [id])
+  phaseId      Int?
+  costItems    CostItem[]  @relation("CostDocument")
+}
