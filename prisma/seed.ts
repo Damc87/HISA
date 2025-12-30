@@ -2,6 +2,7 @@ import { PrismaClient, CostStatus, CostType, PrimaryMetric } from "@prisma/clien
 import fs from "fs";
 import path from "path";
 import { defaultPhases } from "../lib/constants";
+import { getUploadsDir } from "../lib/paths";
 
 const prisma = new PrismaClient();
 
@@ -75,10 +76,7 @@ async function main() {
     }),
   ]);
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
+  const uploadsDir = getUploadsDir();
   const samplePath = path.join(uploadsDir, "primer-racun.pdf");
   if (!fs.existsSync(samplePath)) {
     fs.writeFileSync(samplePath, "PDF placeholder za račun");

@@ -14,21 +14,16 @@ Sodobna Next.js aplikacija za spremljanje stroškov gradnje enodružinske hiše 
    ```bash
    npm install
    ```
-2. Pripravite okolje:
-   ```bash
-   cp .env.example .env
-   # po potrebi prilagodite pot do SQLite datoteke
-   ```
-3. Zaženite migracije in generiranje klienta:
+2. Zaženite migracije in generiranje klienta:
    ```bash
    npx prisma migrate dev --name init
    npx prisma generate
    ```
-4. Napolnite bazo z osnovnimi podatki:
+3. Napolnite bazo z osnovnimi podatki:
    ```bash
    npx prisma db seed
    ```
-5. Zaženite razvojni strežnik:
+4. Zaženite razvojni strežnik:
    ```bash
    npm run dev
    ```
@@ -38,10 +33,19 @@ Aplikacija bo dosegljiva na `http://localhost:3000`.
 ### Namizni način (Electron)
 - Zagon v razvoju (Next + Electron okno): `npm run electron`
 - Produkcijski installer (.exe): `npm run electron:build` (ustvari `dist/Gradnja - stroški Setup*.exe`)
-- V namizni aplikaciji se SQLite baza in naloženi PDF shranjujejo v uporabniško mapo:
-  - Baza: `%APPDATA%/gradnja-stroski/data/app.db` (Windows) oz. `app.getPath("userData")/data/app.db`
-  - Uploads: `%APPDATA%/gradnja-stroski/uploads`
+- V namizni aplikaciji se SQLite baza in naloženi PDF shranjujejo v uporabniško mapo (brez ročnih nastavitev ali spremenljivk okolja):
+  - Baza: `appData/gradnja-stroski/data/app.db` (npr. `%APPDATA%\\gradnja-stroski\\data\\app.db` na Windows)
+  - Uploads: `appData/gradnja-stroski/uploads`
   - Do datotek se dostopa tudi v paketirani aplikaciji (.exe)
+
+### Windows
+- Zahteve: Node.js in npm.
+- Ukazi:
+  ```powershell
+  npm install
+  npm run electron
+  ```
+- Ni treba ustvarjati map ali nastavljati spremenljivk okolja – aplikacija sama izračuna in pripravi poti za bazo ter `uploads`. Ob zagonu v konzolo izpiše uporabljene poti (v razvojni različici) za lažje razhroščevanje.
 
 ## Struktura podatkov
 Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`, `Document`.
@@ -67,7 +71,7 @@ Modeli (Prisma/SQLite): `Project`, `Contractor`, `Phase`, `Subphase`, `CostItem`
 - Poročilo po fazah (brez prilog) je na `/api/reports/phases?projectId=ID` in dostopno z gumba v vmesniku.
 
 ## Nalaganje dokumentov
-- PDF datoteke se shranjujejo v mapo `uploads` v korenu repozitorija (pustite `.gitkeep` v verzijskem sledenju).
+- PDF datoteke se shranjujejo v mapo `uploads` znotraj uporabniškega podatkovnega imenika aplikacije (npr. `%APPDATA%\\gradnja-stroski\\uploads` na Windows); mapo ob prvem zagonu ustvari aplikacija.
 - Ob nalaganju se meta podatki zapišejo v bazo in dokument se poveže s stroškom, da ga je mogoče odpreti iz tabele stroškov.
 
 ## Seed podatki
