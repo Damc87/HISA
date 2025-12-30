@@ -7,6 +7,8 @@ import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
 
 type ProjectWizardProps = {
   triggerLabel: string;
@@ -16,6 +18,8 @@ type ProjectWizardProps = {
 
 export function ProjectWizard({ triggerLabel, variant = "default", className }: ProjectWizardProps) {
   const { createProject } = useProjectContext();
+  const { toast } = useToast();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -35,21 +39,28 @@ export function ProjectWizard({ triggerLabel, variant = "default", className }: 
   };
 
   const handleCreate = async () => {
-    if (!name) return;
+    if (!name.trim()) return;
     try {
       setSubmitting(true);
-      await createProject({
-        name,
-        description,
+      const payload = {
+        name: name.trim(),
+        description: description.trim() || undefined,
         netoM2: netoM2 ? Number(netoM2) : null,
         brutoM2: brutoM2 ? Number(brutoM2) : null,
         volumenM3: volumenM3 ? Number(volumenM3) : null,
-        primaryMetric,
-      });
+        primaryMetric: primaryMetric || undefined,
+      };
+      const project = await createProject(payload);
       setOpen(false);
       reset();
+      if (project?.id) {
+        router.push("/");
+      }
+      toast({ title: "Projekt ustvarjen", description: "Preusmerjam na nadzorno ploščo", variant: "success" });
     } catch (error) {
       console.error("Napaka pri ustvarjanju projekta", error);
+      const message = error instanceof Error ? error.message : "Napaka pri ustvarjanju projekta";
+      toast({ title: "Ni uspelo ustvariti projekta", description: message, variant: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -115,7 +126,7 @@ export function ProjectWizard({ triggerLabel, variant = "default", className }: 
           <Button variant="outline" onClick={() => setOpen(false)}>
             Prekliči
           </Button>
-          <Button onClick={handleCreate} disabled={!name || submitting}>
+          <Button onClick={handleCreate} disabled={!name.trim() || submitting}>
             {submitting ? "Shranjujem ..." : "Shrani projekt"}
           </Button>
         </DialogFooter>
