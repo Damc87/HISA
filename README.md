@@ -25,6 +25,10 @@ Sodobna Next.js aplikacija za spremljanje stroškov gradnje enodružinske hiše 
    npm run electron
    ```
    Aplikacija bo samodejno ustvarila lokalno SQLite bazo iz `prisma/template.db` in kopirala vzorčni PDF v mapo `uploads`.
+3. Pred odpiranjem PR/mergom zaženi preverjanje kakovosti:
+   ```bash
+   npm run verify
+   ```
 
 ### Namizni način (Electron)
 - Zagon v razvoju (Next + Electron okno): `npm run electron`
